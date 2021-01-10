@@ -11,6 +11,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Base64;
 import java.util.List;
 
 import static org.mockito.BDDMockito.given;
@@ -36,6 +37,8 @@ public class IntegrationTest {
         testClient.get().uri(uriBuilder -> uriBuilder
                 .path("/users/hello")
                 .queryParam("name", "sandra").build())
+                .header("Authorization", "Basic " +
+                        Base64.getEncoder().encodeToString("username:password".getBytes()))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(String.class)
@@ -51,6 +54,8 @@ public class IntegrationTest {
 
         testClient.get()
                 .uri("/users/")
+                .header("Authorization", "Basic " +
+                        Base64.getEncoder().encodeToString("username:password".getBytes()))
                 .exchange()
                 .expectStatus()
                 .isOk()
@@ -65,6 +70,8 @@ public class IntegrationTest {
 
         testClient.get()
                 .uri("/users/")
+                .header("Authorization", "Basic " +
+                        Base64.getEncoder().encodeToString("username:password".getBytes()))
                 .exchange()
                 .expectStatus()
                 .isOk();
@@ -76,6 +83,8 @@ public class IntegrationTest {
 
         testClient.get()
                 .uri(String.format("/users/%s", USER1.getEmail()))
+                .header("Authorization", "Basic " +
+                        Base64.getEncoder().encodeToString("username:password".getBytes()))
                 .exchange()
                 .expectStatus()
                 .isOk()
@@ -88,6 +97,8 @@ public class IntegrationTest {
 
         testClient.get()
                 .uri(String.format("/users/%s", "wrongEmail"))
+                .header("Authorization", "Basic " +
+                        Base64.getEncoder().encodeToString("username:password".getBytes()))
                 .exchange()
                 .expectStatus()
                 .isNotFound();
@@ -100,6 +111,8 @@ public class IntegrationTest {
         testClient.post()
                 .uri("/users/add")
                 .body(BodyInserters.fromValue(USER2))
+                .header("Authorization", "Basic " +
+                        Base64.getEncoder().encodeToString("username:password".getBytes()))
                 .exchange()
                 .expectStatus()
                 .isCreated()
@@ -127,6 +140,8 @@ public class IntegrationTest {
         testClient.put()
                 .uri(String.format("/users/update/%s", USER3.getEmail()))
                 .body(BodyInserters.fromValue(USER3))
+                .header("Authorization", "Basic " +
+                        Base64.getEncoder().encodeToString("username:password".getBytes()))
                 .exchange()
                 .expectStatus()
                 .isOk()
@@ -139,6 +154,8 @@ public class IntegrationTest {
 
         testClient.put()
                 .uri(String.format("/users/%s/update", "wrongEmail"))
+                .header("Authorization", "Basic " +
+                        Base64.getEncoder().encodeToString("username:password".getBytes()))
                 .exchange()
                 .expectStatus()
                 .isNotFound();
@@ -148,6 +165,8 @@ public class IntegrationTest {
     public void whenUserEmailIsTest_thenHandlerFunctionIsApplied() {
         testClient.get()
                 .uri(String.format("/users/%s/", "test"))
+                .header("Authorization", "Basic " +
+                        Base64.getEncoder().encodeToString("username:password".getBytes()))
                 .exchange()
                 .expectStatus()
                 .isForbidden();

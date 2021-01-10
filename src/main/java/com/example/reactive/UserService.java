@@ -2,6 +2,7 @@ package com.example.reactive;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -25,4 +26,7 @@ public class UserService {
     public Mono<User> addUser(Mono<User> user) {
         return user.flatMap(repository::save);
     }
+
+    //if it's SecurityException - create 403 ServerResponse
+    //anything else, send generic BadRequest ServerResponse
 }
