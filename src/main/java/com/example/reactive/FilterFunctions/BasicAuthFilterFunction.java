@@ -10,7 +10,6 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.Base64;
-import java.util.Set;
 
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
@@ -18,19 +17,19 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 @Component
 public class BasicAuthFilterFunction implements HandlerFilterFunction<ServerResponse, ServerResponse> {
 
-    private final Set<String> allowableAuthHeaders;
+    private final String basicAuthCredentials;
 
-    public BasicAuthFilterFunction(Set<String> allowableAuthHeaders) {
-        this.allowableAuthHeaders = Set.of(createAuthHeader("username", "password"));
+    public BasicAuthFilterFunction() {
+        this.basicAuthCredentials = createAuthHeader("username", "password");
     }
 
     @SneakyThrows
     @Override
     public Mono<ServerResponse> filter(ServerRequest request, HandlerFunction<ServerResponse> handlerFunction) {
         String authHeader = request.headers().asHttpHeaders().getFirst(AUTHORIZATION);
-        if (!allowableAuthHeaders.contains(authHeader)) {
-            log.warn("Failed to authenticate admin user");
-            return Mono.error(new SecurityException("Incorrect admin authorization credentials"));
+        if (!basicAuthCredentials.equals(authHeader)) {
+            log.warn("Failed to authenticate user");
+            return Mono.error(new SecurityException("Incorrect authorization credentials"));
         }
         return handlerFunction.handle(request);
     }
