@@ -30,8 +30,6 @@ public class UserService {
         return newUserMono.flatMap(newUser ->
                 repository
                         .findById(newUser.getEmail())
-                        .doOnNext(logger -> log.error("found a user"))
-                        .doOnError(logger -> log.error("this is error"))
                         .flatMap(existingUser -> Mono.<User>error(new IllegalArgumentException("User already exists")))
                         .switchIfEmpty(repository.save(newUser))
                         .doOnError(error -> log.error("User {} already exists", newUser.getEmail())));
