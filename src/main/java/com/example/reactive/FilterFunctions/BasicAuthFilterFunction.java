@@ -9,9 +9,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
-import lombok.extern.slf4j.Slf4j;
 import java.util.Base64;
-import java.util.Objects;
 import java.util.Set;
 
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
@@ -31,8 +29,8 @@ public class BasicAuthFilterFunction implements HandlerFilterFunction<ServerResp
     public Mono<ServerResponse> filter(ServerRequest request, HandlerFunction<ServerResponse> handlerFunction) {
         String authHeader = request.headers().asHttpHeaders().getFirst(AUTHORIZATION);
         if (!allowableAuthHeaders.contains(authHeader)) {
-            log.warn("Failed to authenticate user");
-            throw new SecurityException("Incorrect authorization credentials");
+            log.warn("Failed to authenticate admin user");
+            return Mono.error(new SecurityException("Incorrect admin authorization credentials"));
         }
         return handlerFunction.handle(request);
     }

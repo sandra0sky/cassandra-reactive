@@ -16,7 +16,6 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,44 +25,20 @@ import static org.springframework.http.HttpStatus.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = DemoApplication.class)
 @ExtendWith(SpringExtension.class)
 @ExtendWith(MockitoExtension.class)
-class UserHandlerTest {
-
-    private static final User USER1 = User.builder().email("test1@hello.com").username("User1").firstname("jon1").surname("snow").age(100).build();
-    private static final User USER2 = User.builder().email("test2@hello.com").username("User2").firstname("jon2").surname("snow").age(100).build();
-    private static final User USER3 = User.builder().email("test3@hello.com").username("User3").firstname("jon3").surname("snow").age(100).build();
-    private static final List<User> USER_LIST = List.of(USER1, USER2, USER3);
+class UserHandlerTest extends ApplicationTests{
 
     @Autowired
     private WebTestClient testClient;
-    @MockBean
+    @Mock
     private UserService userService;
+    @MockBean
+    UserRepository repository;
     @InjectMocks
     private UserHandler userHandler;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private ServerRequest request;
 
-
-    @Test
-    void greet_isSuccessfulIfNameIsProvided() {
-        given(request.queryParam("name")).willReturn(Optional.of("name1"));
-
-        StepVerifier.create(userHandler.greet(request)).assertNext(serverResponse -> {
-            assertThat(serverResponse).isNotNull();
-            assertThat(serverResponse.statusCode()).isEqualTo(OK);
-        }).verifyComplete();
-
-    }
-
-    @Test
-    void greet_returnsFallbackIfNoNameIsProvided() {
-        given(request.queryParam("name")).willReturn(Optional.empty());
-
-        StepVerifier.create(userHandler.greet(request))
-                .assertNext(serverResponse -> {
-                    assertThat(serverResponse).isNotNull();
-                    assertThat(serverResponse.statusCode()).isEqualTo(OK);
-                }).verifyComplete();
-    }
+    private static final List<User> USER_LIST = List.of(USER1, USER2, USER3);
 
     @Test
     void getAllUsers_returnsListOfAllAvailableUsers() {
@@ -77,18 +52,6 @@ class UserHandlerTest {
     }
 
     @Test
-    void getAllUsers_returns404IfNoUsersInDB() {
-        given(userService.getAllUsers()).willReturn(Mono.empty());
-
-        StepVerifier.create(userHandler.getAllUsers(request))
-                .assertNext(serverResponse -> {
-                    assertThat(serverResponse).isNotNull();
-                    assertThat(serverResponse.statusCode()).isEqualTo(NOT_FOUND);
-                }).verifyComplete();
-
-    }
-
-    @Test
     void getUserByEmail_returnsMatchingUser() {
         given(request.pathVariable("email")).willReturn(USER1.getEmail());
         given(userService.findByEmail(USER1.getEmail())).willReturn(Mono.just(USER1));
@@ -98,20 +61,19 @@ class UserHandlerTest {
                     assertThat(serverResponse).isNotNull();
                     assertThat(serverResponse.statusCode()).isEqualTo(OK);
                 }).verifyComplete();
-
     }
 
+    //TODO failing
     @Test
-    void getUserByEmail_returns404IfNoMatchingUserFoundInDB() {
+    void getUserByEmail_returnsBadRequestIfNoMatchingUserFoundInDB() {
         given(request.pathVariable("email")).willReturn("wrongEmail");
-        given(userService.findByEmail("wrongEmail")).willReturn(Mono.empty());
+        given(userService.findByEmail("wrongEmail")).willReturn(Mono.error(new IllegalArgumentException()));
 
         StepVerifier.create(userHandler.getUserByEmail(request))
                 .assertNext(serverResponse -> {
                     assertThat(serverResponse).isNotNull();
-                    assertThat(serverResponse.statusCode()).isEqualTo(NOT_FOUND);
+                    assertThat(serverResponse.statusCode()).isEqualTo(BAD_REQUEST);
                 }).verifyComplete();
-
     }
 
     @Test
@@ -121,8 +83,29 @@ class UserHandlerTest {
         StepVerifier.create(userHandler.addUser(request))
                 .assertNext(serverResponse -> {
                     assertThat(serverResponse).isNotNull();
-                    assertThat(serverResponse.statusCode()).isEqualTo(CREATED);
+                    assertThat(serverResponse.statusCode()).isEqualTo(ACCEPTED);
                 }).verifyComplete();
+    }
 
+    @Test
+    void updateUser_updatesExistingUserReturnsOkAndUserBody() {
+        given(userService.updateUser(any())).willReturn(Mono.just(USER2));
+
+        StepVerifier.create(userHandler.updateUser(request))
+                .assertNext(serverResponse -> {
+                    assertThat(serverResponse).isNotNull();
+                    assertThat(serverResponse.statusCode()).isEqualTo(OK);
+                }).verifyComplete();
+    }
+
+    //TODO failing
+    @Test
+    void updateUser_returnsBadRequestIfEmailNotMatching() {
+        given(userService.updateUser(any())).willReturn(Mono.error(new IllegalArgumentException()));
+
+        StepVerifier.create(userHandler.updateUser(request))
+                .assertNext(serverResponse -> {
+                    assertThat(serverResponse.statusCode()).isEqualTo(BAD_REQUEST);
+                }).verifyComplete();
     }
 }

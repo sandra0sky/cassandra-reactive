@@ -14,23 +14,18 @@ import reactor.test.StepVerifier;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = DemoApplication.class)
 @ExtendWith(SpringExtension.class)
-public class UserServiceTest {
+public class UserServiceTest extends ApplicationTests {
 
     @Autowired
     private WebTestClient testClient;
-    private UserService userService;
     @MockBean
     private UserRepository repository;
 
-    private static final User USER1 = User.builder().email("test1@hello.com").username("User1").firstname("jon1").surname("snow").age(100).build();
-    private static final User USER2 = User.builder().email("test2@hello.com").username("User2").firstname("jon2").surname("snow").age(100).build();
-    private static final User USER3 = User.builder().email("test3@hello.com").username("User3").firstname("jon3").surname("snow").age(100).build();
-
+    private UserService userService;
 
     @BeforeEach
     public void setUp() {
@@ -50,14 +45,36 @@ public class UserServiceTest {
     }
 
     @Test
-    public void getUserByEmail_returnsNotFoundIfNoUserMatching() {
+    public void getUserByEmail_returnsErrorIfEmailNotFound() {
         given(repository.findById("wrongEmail")).willReturn(Mono.empty());
-        StepVerifier.create(userService.findByEmail("wrongEmail")).verifyComplete();
+        StepVerifier.create(userService.findByEmail("wrongEmail")).expectError().verify();
     }
 
     @Test
-    public void addUser_savesUserAndReturnsOkAndUserBody() {
+    public void addUser_savesUser() {
+        given(repository.findById(USER2.getEmail())).willReturn(Mono.empty());
         given(repository.save(USER2)).willReturn(Mono.just(USER2));
         StepVerifier.create(userService.addUser(Mono.just(USER2))).expectNext(USER2).expectComplete().verify();
+    }
+
+    @Test
+    public void addUser_returnsErrorIfNewUsersEmailIsAlreadyInDB() {
+        given(repository.findById(USER2.getEmail())).willReturn(Mono.just(USER1));
+        given(repository.save(USER2)).willReturn(Mono.empty());
+        StepVerifier.create(userService.addUser(Mono.just(USER2))).expectError().verify();
+    }
+
+    @Test
+    public void updateUser_savesUpdatedUser() {
+        given(repository.findById(USER2.getEmail())).willReturn(Mono.just(USER2));
+        given(repository.save(USER2)).willReturn(Mono.just(USER2));
+        StepVerifier.create(userService.updateUser(Mono.just(USER2))).expectNext(USER2).expectComplete().verify();
+    }
+
+    @Test
+    public void updateUser_returnsErrorIfEmailToUpdateUserIsNotFound() {
+        given(repository.findById(USER2.getEmail())).willReturn(Mono.empty());
+        given(repository.save(USER2)).willReturn(Mono.empty());
+        StepVerifier.create(userService.updateUser(Mono.just(USER2))).expectError().verify();
     }
 }
